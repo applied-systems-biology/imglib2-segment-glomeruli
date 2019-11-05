@@ -1,11 +1,17 @@
 package org.hkijena.segment_glomeruli.tasks;
 
+import net.imglib2.algorithm.gauss3.Gauss3;
+import net.imglib2.algorithm.morphology.Dilation;
+import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.view.Views;
 import org.hkijena.segment_glomeruli.DataInterface;
 import org.hkijena.segment_glomeruli.Filters;
+
+import java.util.Arrays;
 
 public class SegmentTissue2D extends DAGTask {
 
@@ -35,7 +41,23 @@ public class SegmentTissue2D extends DAGTask {
         final double xsize = getDataInterface().getVoxelSizeXY();
         final double gaussSigma = 3.0 / xsize;
 
+        Img<FloatType> imgSmall = Filters.rescale(img, 1.0 / downscaleFactor, 1.0 / downscaleFactor);
+
+        Gauss3.gauss(gaussSigma, Views.extendZero(imgSmall.copy()), imgSmall);
+
+        final float tissuePercentile = Filters.findPercentiles(Filters.getSortedPixels(imgSmall), Arrays.asList(thresholdingPercentile)).get(0).get();
+        final float tissueThreshold = tissuePercentile * (float)thresholdingPercentileFactor;
+
+        // Thresholding & cleaning
+        Img<UnsignedByteType> smallMask = Filters.threshold(imgSmall, new FloatType(tissueThreshold));
+
+        HyperSphereShape disk = new HyperSphereShape(morphDiskRadius);
+        smallMask = Dilation.dilate(smallMask, disk, 1);
+        Filters.closeHoles(smallMask);
+
         ImageJFunctions.show(img);
+        ImageJFunctions.show(imgSmall);
+        ImageJFunctions.show(smallMask);
 
         System.out.println();
         

@@ -8,7 +8,7 @@ import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
-import org.hkijena.segment_glomeruli.Utils;
+import org.hkijena.segment_glomeruli.Filters;
 
 import java.nio.file.Path;
 
@@ -44,7 +44,7 @@ public class OMETIFFImageCache<T extends RealType<T> & NativeType<T>> {
 
     public Img<T> getPlane(long z) {
         Img<T> result = factory.create(img.dimension(0), img.dimension(1));
-        Utils.copy(Views.hyperSlice(img, 2, z), result);
+        Filters.copy(Views.hyperSlice(img, 2, z), result);
         return result;
     }
 
