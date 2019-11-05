@@ -9,12 +9,18 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 public class DataInterface {
+
+    private double voxelSizeXY;
+    private double voxelSizeZ;
+
     private OMETIFFImageCache<UnsignedByteType> inputData;
     private TIFFPlanesImageCache<UnsignedByteType> tissueOutputData;
     private TIFFPlanesImageCache<UnsignedByteType> glomeruli2DOutputData;
     private TIFFPlanesImageCache<UnsignedIntType> glomeruli3DOutputData;
 
-    public DataInterface(Path inputImageFile, Path outputDirectory) {
+    public DataInterface(Path inputImageFile, Path outputDirectory, double voxelSizeXY, double voxelSizeZ) {
+        this.voxelSizeXY = voxelSizeXY;
+        this.voxelSizeZ = voxelSizeZ;
         try {
             Utils.ensureDirectory(outputDirectory);
         } catch (IOException e) {
@@ -41,5 +47,13 @@ public class DataInterface {
 
     public TIFFPlanesImageCache<UnsignedIntType> getGlomeruli3DOutputData() {
         return glomeruli3DOutputData;
+    }
+
+    public double getVoxelSizeXY() {
+        return voxelSizeXY;
+    }
+
+    public double getVoxelSizeZ() {
+        return voxelSizeZ;
     }
 }

@@ -1,10 +1,12 @@
 package org.hkijena.segment_glomeruli;
 import com.github.dexecutor.core.*;
-import com.github.dexecutor.core.task.Task;
-import com.github.dexecutor.core.task.TaskProvider;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import org.apache.commons.cli.*;
 import org.hkijena.segment_glomeruli.tasks.*;
 
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,12 +46,26 @@ public class Main {
         Path inputFilePath = Paths.get(cmd.getOptionValue("input"));
         Path outputFilePath = Paths.get(cmd.getOptionValue("output"));
 
+        // Load voxel sizes
+        Map<String, Double> voxel_xy = new HashMap<>();
+        Map<String, Double> voxel_z = new HashMap<>();
+        {
+            Gson gson = (new GsonBuilder()).create();
+            JsonObject obj = gson.fromJson(new String(Files.readAllBytes(inputFilePath.resolve("voxel_sizes.json")), Charset.defaultCharset()), JsonObject.class);
+            for(String key : obj.keySet()) {
+                voxel_xy.put(key, obj.getAsJsonObject(key).getAsJsonPrimitive("xy").getAsDouble());
+                voxel_z.put(key, obj.getAsJsonObject(key).getAsJsonPrimitive("z").getAsDouble());
+            }
+        }
+
         // Load data interfaces
         List<DataInterface> dataInterfaces = new ArrayList<>();
 
         for(Path inputImagePath : Files.walk(inputFilePath).filter(path -> path.toString().endsWith(".tif")).collect(Collectors.toList())) {
             System.out.println("Generating data interface for " + inputImagePath.toString());
-            DataInterface dataInterface = new DataInterface(inputImagePath, outputFilePath.resolve(inputImagePath.getFileName()));
+            double voxelSizeXY = voxel_xy.get(inputImagePath.getFileName().toString());
+            double voxelSizeZ = voxel_z.get(inputImagePath.getFileName().toString());
+            DataInterface dataInterface = new DataInterface(inputImagePath, outputFilePath.resolve(inputImagePath.getFileName()), voxelSizeXY, voxelSizeZ);
             dataInterfaces.add(dataInterface);
         }
 

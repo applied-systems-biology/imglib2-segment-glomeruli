@@ -5,6 +5,7 @@ import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.FloatType;
 import org.hkijena.segment_glomeruli.DataInterface;
+import org.hkijena.segment_glomeruli.Filters;
 
 public class SegmentTissue2D extends DAGTask {
 
@@ -28,6 +29,15 @@ public class SegmentTissue2D extends DAGTask {
         final Img<UnsignedByteType> importedImage = getDataInterface().getInputData().getPlane(planeZIndex);
 
         Img<FloatType> img = ImageJFunctions.convertFloat(ImageJFunctions.wrap(importedImage, "img"));
+        Filters.median(img.copy(), img, medianFilterSize, new FloatType(0));
+        Filters.normalizeByMax(img);
+
+        final double xsize = getDataInterface().getVoxelSizeXY();
+        final double gaussSigma = 3.0 / xsize;
+
+        ImageJFunctions.show(img);
+
+        System.out.println();
         
     }
 }
