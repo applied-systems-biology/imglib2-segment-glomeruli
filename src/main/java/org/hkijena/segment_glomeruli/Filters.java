@@ -1,32 +1,29 @@
 package org.hkijena.segment_glomeruli;
 
-import ij.plugin.Resizer;
 import net.imglib2.*;
-import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.RectangleShape;
-import net.imglib2.algorithm.stats.Max;
 import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
 import net.imglib2.img.array.ArrayImgFactory;
-import net.imglib2.img.display.imagej.ImageJFunctions;
-import net.imglib2.interpolation.randomaccess.NLinearInterpolator;
 import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
-import net.imglib2.realtransform.*;
+import net.imglib2.realtransform.AffineGet;
+import net.imglib2.realtransform.AffineRandomAccessible;
+import net.imglib2.realtransform.RealViews;
+import net.imglib2.realtransform.Scale;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.Type;
-import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
-import net.imglib2.type.numeric.real.AbstractRealType;
-import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.ExtendedRandomAccessibleInterval;
-import net.imglib2.view.IntervalView;
 import net.imglib2.view.RandomAccessibleOnRealRandomAccessible;
 import net.imglib2.view.Views;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Stack;
 
 public class Filters {
 
@@ -215,7 +212,7 @@ public class Filters {
 
         RandomAccess<UnsignedByteType> access = Views.extendValue(mask, new UnsignedByteType(255)).randomAccess();
         Img<UnsignedByteType> buffer = mask.factory().create(getDimensions(mask));
-        RandomAccess<UnsignedByteType> buffer_access = buffer.randomAccess();
+        RandomAccess<UnsignedByteType> buffer_access = Views.extendValue(buffer, new UnsignedByteType(255)).randomAccess();
 
         {
             long cols = mask.dimension(0);
@@ -226,31 +223,31 @@ public class Filters {
                 if(row == 0 || row == rows - 1) {
                     for(long col = 0; col < cols; ++col) {
                         pos[0] = col;
-                        access.move(pos);
+                        access.setPosition(pos);
                         if(access.get().getInteger() == 0) {
                             borderLocations.push(pos.clone());
 
-                            buffer_access.move(pos);
+                            buffer_access.setPosition(pos);
                             buffer_access.get().set(new UnsignedByteType(255));
                         }
                     }
                 }
                 else {
                     pos[0] = 0;
-                    access.move(pos);
+                    access.setPosition(pos);
                     if(access.get().getInteger() == 0) {
                         borderLocations.push(pos.clone());
 
-                        buffer_access.move(pos);
+                        buffer_access.setPosition(pos);
                         buffer_access.get().set(new UnsignedByteType(255));
                     }
 
                     pos[0] = cols - 1;
-                    access.move(pos);
+                    access.setPosition(pos);
                     if(access.get().getInteger() == 0) {
                         borderLocations.push(pos.clone());
 
-                        buffer_access.move(pos);
+                        buffer_access.setPosition(pos);
                         buffer_access.get().set(new UnsignedByteType(255));
                     }
                 }
@@ -267,8 +264,8 @@ public class Filters {
                         pos3[0] = pos2[0] + dx;
                         pos3[1] = pos2[1] + dy;
 
-                        access.move(pos3);
-                        buffer_access.move(pos3);
+                        access.setPosition(pos3);
+                        buffer_access.setPosition(pos3);
 
                         if(access.get().getInteger() == 0 && buffer_access.get().getInteger() == 0) {
                             buffer_access.get().set(new UnsignedByteType(255));

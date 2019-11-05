@@ -1,5 +1,8 @@
 package org.hkijena.segment_glomeruli;
-import com.github.dexecutor.core.*;
+
+import com.github.dexecutor.core.DefaultDexecutor;
+import com.github.dexecutor.core.DexecutorConfig;
+import com.github.dexecutor.core.ExecutionConfig;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -10,8 +13,12 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class Main {

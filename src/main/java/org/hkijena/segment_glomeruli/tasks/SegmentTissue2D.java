@@ -2,6 +2,7 @@ package org.hkijena.segment_glomeruli.tasks;
 
 import net.imglib2.algorithm.gauss3.Gauss3;
 import net.imglib2.algorithm.morphology.Dilation;
+import net.imglib2.algorithm.morphology.Erosion;
 import net.imglib2.algorithm.neighborhood.HyperSphereShape;
 import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
@@ -54,6 +55,7 @@ public class SegmentTissue2D extends DAGTask {
         HyperSphereShape disk = new HyperSphereShape(morphDiskRadius);
         smallMask = Dilation.dilate(smallMask, disk, 1);
         Filters.closeHoles(smallMask);
+        smallMask = Erosion.erode(smallMask, disk, 1);
 
         ImageJFunctions.show(img);
         ImageJFunctions.show(imgSmall);
