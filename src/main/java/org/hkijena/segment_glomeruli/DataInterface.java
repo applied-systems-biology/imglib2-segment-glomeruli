@@ -83,7 +83,7 @@ public class DataInterface {
 
     private void saveTissueQuantificationResults() {
         try(JsonWriter writer = new JsonWriter(new FileWriter(outputDirectory.resolve("tissue_quantified.json").toFile()))) {
-            Gson gson = (new GsonBuilder()).create();
+            Gson gson = (new GsonBuilder().setPrettyPrinting()).create();
             gson.toJson(tissueQuantificationResult, TissueQuantificationResult.class, writer);
         } catch (IOException e) {
             e.printStackTrace();
@@ -92,7 +92,7 @@ public class DataInterface {
 
     private void saveGlomeruliQuantificationResults() {
         try(JsonWriter writer = new JsonWriter(new FileWriter(outputDirectory.resolve("glomeruli.json").toFile()))) {
-            Gson gson = (new GsonBuilder()).create();
+            Gson gson = (new GsonBuilder().setPrettyPrinting()).create();
             gson.toJson(glomeruliQuantificationResult, GlomeruliQuantificationResult.class, writer);
         } catch (IOException e) {
             e.printStackTrace();

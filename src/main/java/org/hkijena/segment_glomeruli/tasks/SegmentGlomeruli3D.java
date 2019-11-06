@@ -142,7 +142,7 @@ public class SegmentGlomeruli3D extends DAGTask {
 
                 // Pass-through renaming
                 for(int j = first_loaded_label_index; j < labels.size(); ++j) {
-                    Img<UnsignedIntType> previous_label = labels.get(i);
+                    Img<UnsignedIntType> previous_label = labels.get(j);
                     Cursor<UnsignedIntType> cursor = previous_label.cursor();
                     while(cursor.hasNext()) {
                         cursor.fwd();

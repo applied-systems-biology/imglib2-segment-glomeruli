@@ -40,5 +40,6 @@
     <orderEntry type="library" name="Maven: com.github.dexecutor:dexecutor-core:2.1.0" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.25" level="project" />
     <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.8.6" level="project" />
+    <orderEntry type="library" name="Maven: org.slf4j:slf4j-jdk14:1.7.29" level="project" />
   </component>
 </module>
