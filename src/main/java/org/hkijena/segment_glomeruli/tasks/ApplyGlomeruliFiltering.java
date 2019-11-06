@@ -4,7 +4,6 @@ import net.imglib2.Cursor;
 import net.imglib2.img.Img;
 import net.imglib2.type.numeric.integer.UnsignedIntType;
 import org.hkijena.segment_glomeruli.DataInterface;
-import org.hkijena.segment_glomeruli.data.Glomerulus;
 
 public class ApplyGlomeruliFiltering extends DAGTask {
 

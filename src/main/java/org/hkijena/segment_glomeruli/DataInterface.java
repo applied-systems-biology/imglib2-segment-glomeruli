@@ -2,7 +2,6 @@ package org.hkijena.segment_glomeruli;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.stream.JsonWriter;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedIntType;
 import org.hkijena.segment_glomeruli.caches.OMETIFFImageCache;
@@ -10,8 +9,6 @@ import org.hkijena.segment_glomeruli.caches.TIFFPlanesImageCache;
 import org.hkijena.segment_glomeruli.data.GlomeruliQuantificationResult;
 import org.hkijena.segment_glomeruli.data.TissueQuantificationResult;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;

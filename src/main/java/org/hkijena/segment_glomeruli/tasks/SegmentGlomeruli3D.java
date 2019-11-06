@@ -5,7 +5,6 @@ import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImgFactory;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedIntType;
 import org.hkijena.segment_glomeruli.DataInterface;
 

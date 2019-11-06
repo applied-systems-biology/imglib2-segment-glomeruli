@@ -1,21 +1,19 @@
 package org.hkijena.segment_glomeruli;
 
-import net.imglib2.*;
 import net.imglib2.RandomAccess;
+import net.imglib2.*;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.RectangleShape;
 import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.interpolation.InterpolatorFactory;
-import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
 import net.imglib2.realtransform.AffineGet;
 import net.imglib2.realtransform.AffineRandomAccessible;
 import net.imglib2.realtransform.RealViews;
 import net.imglib2.realtransform.Scale;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.Type;
-import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
