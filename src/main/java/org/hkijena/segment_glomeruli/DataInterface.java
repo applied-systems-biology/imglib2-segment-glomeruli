@@ -7,6 +7,7 @@ import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedIntType;
 import org.hkijena.segment_glomeruli.caches.OMETIFFImageCache;
 import org.hkijena.segment_glomeruli.caches.TIFFPlanesImageCache;
+import org.hkijena.segment_glomeruli.data.GlomeruliQuantificationResult;
 import org.hkijena.segment_glomeruli.data.TissueQuantificationResult;
 
 import java.io.FileNotFoundException;
@@ -28,6 +29,7 @@ public class DataInterface {
     private TIFFPlanesImageCache<UnsignedIntType> glomeruli3DOutputData;
 
     private TissueQuantificationResult tissueQuantificationResult = new TissueQuantificationResult();
+    private GlomeruliQuantificationResult glomeruliQuantificationResult = new GlomeruliQuantificationResult();
 
     private volatile long tissuePixelCount = 0;
 
@@ -88,11 +90,25 @@ public class DataInterface {
         }
     }
 
+    private void saveGlomeruliQuantificationResults() {
+        try(JsonWriter writer = new JsonWriter(new FileWriter(outputDirectory.resolve("glomeruli.json").toFile()))) {
+            Gson gson = (new GsonBuilder()).create();
+            gson.toJson(glomeruliQuantificationResult, GlomeruliQuantificationResult.class, writer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void saveQuantificationResults() {
         saveTissueQuantificationResults();
+        saveGlomeruliQuantificationResults();
     }
 
     public TissueQuantificationResult getTissueQuantificationResult() {
         return tissueQuantificationResult;
+    }
+
+    public GlomeruliQuantificationResult getGlomeruliQuantificationResult() {
+        return glomeruliQuantificationResult;
     }
 }
