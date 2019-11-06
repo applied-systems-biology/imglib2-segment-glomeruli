@@ -53,6 +53,12 @@ public class Main {
         Path inputFilePath = Paths.get(cmd.getOptionValue("input"));
         Path outputFilePath = Paths.get(cmd.getOptionValue("output"));
 
+        int numThreads = 1;
+        if(cmd.hasOption("threads")) {
+            numThreads = Integer.parseInt(cmd.getOptionValue("threads"));
+        }
+        System.out.println("Running with " + numThreads + " threads");
+
         // Load voxel sizes
         Map<String, Double> voxel_xy = new HashMap<>();
         Map<String, Double> voxel_z = new HashMap<>();
@@ -78,7 +84,7 @@ public class Main {
 
         // Generate DAG
         Map<Integer, DAGTask> dagTasks = new HashMap<>();
-        ExecutorService executorService = Executors.newFixedThreadPool(Integer.parseInt(threads.getValue("1")));
+        ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
         DexecutorConfig<Integer, Integer> dexecutorConfig = new DexecutorConfig<>(executorService, integer -> dagTasks.get(integer));
         DefaultDexecutor<Integer, Integer> dexecutor = new DefaultDexecutor<>(dexecutorConfig);
 
@@ -142,6 +148,12 @@ public class Main {
         }
 
         dexecutor.execute(ExecutionConfig.TERMINATING);
+
+        // Save quantification results
+        for(DataInterface dataInterface : dataInterfaces) {
+            dataInterface.saveQuantificationResults();
+        }
+
         System.out.println("Task finished.");
         System.exit(0);
     }

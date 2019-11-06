@@ -1,14 +1,23 @@
 package org.hkijena.segment_glomeruli;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.stream.JsonWriter;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedIntType;
 import org.hkijena.segment_glomeruli.caches.OMETIFFImageCache;
 import org.hkijena.segment_glomeruli.caches.TIFFPlanesImageCache;
+import org.hkijena.segment_glomeruli.data.TissueQuantificationResult;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 
 public class DataInterface {
+
+    private Path outputDirectory;
 
     private double voxelSizeXY;
     private double voxelSizeZ;
@@ -18,7 +27,12 @@ public class DataInterface {
     private TIFFPlanesImageCache<UnsignedByteType> glomeruli2DOutputData;
     private TIFFPlanesImageCache<UnsignedIntType> glomeruli3DOutputData;
 
+    private TissueQuantificationResult tissueQuantificationResult = new TissueQuantificationResult();
+
+    private volatile long tissuePixelCount = 0;
+
     public DataInterface(Path inputImageFile, Path outputDirectory, double voxelSizeXY, double voxelSizeZ) {
+        this.outputDirectory = outputDirectory;
         this.voxelSizeXY = voxelSizeXY;
         this.voxelSizeZ = voxelSizeZ;
         try {
@@ -55,5 +69,30 @@ public class DataInterface {
 
     public double getVoxelSizeZ() {
         return voxelSizeZ;
+    }
+
+    public long getTissuePixelCount() {
+        return tissuePixelCount;
+    }
+
+    public synchronized void addTissuePixelCount(long count) {
+        this.tissuePixelCount += count;
+    }
+
+    private void saveTissueQuantificationResults() {
+        try(JsonWriter writer = new JsonWriter(new FileWriter(outputDirectory.resolve("tissue_quantified.json").toFile()))) {
+            Gson gson = (new GsonBuilder()).create();
+            gson.toJson(tissueQuantificationResult, TissueQuantificationResult.class, writer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void saveQuantificationResults() {
+        saveTissueQuantificationResults();
+    }
+
+    public TissueQuantificationResult getTissueQuantificationResult() {
+        return tissueQuantificationResult;
     }
 }

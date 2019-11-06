@@ -1,11 +1,13 @@
 package org.hkijena.segment_glomeruli;
 
 import net.imglib2.*;
+import net.imglib2.RandomAccess;
 import net.imglib2.algorithm.neighborhood.Neighborhood;
 import net.imglib2.algorithm.neighborhood.RectangleShape;
 import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
 import net.imglib2.img.array.ArrayImgFactory;
+import net.imglib2.interpolation.InterpolatorFactory;
 import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
 import net.imglib2.realtransform.AffineGet;
 import net.imglib2.realtransform.AffineRandomAccessible;
@@ -13,17 +15,16 @@ import net.imglib2.realtransform.RealViews;
 import net.imglib2.realtransform.Scale;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.Type;
+import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
+import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.ExtendedRandomAccessibleInterval;
 import net.imglib2.view.RandomAccessibleOnRealRandomAccessible;
 import net.imglib2.view.Views;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 public class Filters {
 
@@ -37,9 +38,8 @@ public class Filters {
         }
     }
 
-    public static <T extends RealType<T>> void median(Img<T> src, Img<T> target, int sz, T zero) {
-        if(zero != null)
-            setTo(target, zero);
+    public static <T extends RealType<T>> void median(Img<T> src, Img<T> target, int sz) {
+        setTo(target, src.factory().type().createVariable());
         int border = sz / 2;
         long[] border_arr = new long[src.numDimensions()];
         Arrays.fill(border_arr, -border);
@@ -87,19 +87,23 @@ public class Filters {
     }
 
     public static <T extends RealType<T>> void normalizeByMax(Img<T> target) {
+       normalizeByMax(target, 1);
+    }
+
+    public static <T extends RealType<T>> void normalizeByMax(Img<T> target, double mul) {
         T max_value = getMax(target);
         Cursor<T> cursor = target.cursor();
         while(cursor.hasNext()) {
             cursor.fwd();
-            T v = cursor.get().copy();
-            v.div(max_value);
-            cursor.get().set(v);
+            double v = cursor.get().getRealDouble();
+            v = v * mul / max_value.getRealDouble();
+            cursor.get().setReal(v);
         }
     }
 
-    public static <T extends NativeType<T> & NumericType<T>> Img<T> rescale(Img<T> src, double... factors) {
+    public static <T extends NativeType<T> & NumericType<T>> Img<T> rescale(Img<T> src, InterpolatorFactory<T, RandomAccessible<T>> interpolation, double... factors) {
         ExtendedRandomAccessibleInterval<T, RandomAccessibleInterval<T>> extended = Views.extendZero(src);
-        RealRandomAccessible<T> field = Views.interpolate(extended, new NLinearInterpolatorFactory<>());
+        RealRandomAccessible<T> field = Views.interpolate(extended, interpolation);
         Scale affine = new Scale(factors);
         AffineRandomAccessible<T, AffineGet> scaled = RealViews.affine(field, affine);
         RandomAccessibleOnRealRandomAccessible<T> raster = Views.raster(scaled);
@@ -109,6 +113,25 @@ public class Filters {
         for(int i = 0; i < src.numDimensions(); ++i) {
             dimensions[i] = (long)(src.dimension(i) * factors[i]);
         }
+        Img<T> result = factory.create(dimensions);
+        copy(raster, result);
+        return result;
+    }
+
+    public static <T extends NativeType<T> & NumericType<T>> Img<T> resize(Img<T> src, InterpolatorFactory<T, RandomAccessible<T>> interpolation, long... dimensions) {
+        ExtendedRandomAccessibleInterval<T, RandomAccessibleInterval<T>> extended = Views.extendZero(src);
+        RealRandomAccessible<T> field = Views.interpolate(extended, interpolation);
+
+        double[] factors = new double[dimensions.length];
+        for(int i = 0; i < dimensions.length; ++i) {
+            factors[i] = dimensions[i] / (double)src.dimension(i);
+        }
+
+        Scale affine = new Scale(factors);
+        AffineRandomAccessible<T, AffineGet> scaled = RealViews.affine(field, affine);
+        RandomAccessibleOnRealRandomAccessible<T> raster = Views.raster(scaled);
+
+        ImgFactory<T> factory = new ArrayImgFactory<>(src.factory().type());
         Img<T> result = factory.create(dimensions);
         copy(raster, result);
         return result;
@@ -151,11 +174,9 @@ public class Filters {
         List<T> pixels = new ArrayList<>((int)src.size());
 
         Cursor<T> cursor = src.cursor();
-        int i = 0;
         while(cursor.hasNext()) {
             cursor.fwd();
             pixels.add(cursor.get().copy());
-            ++i;
         }
 
         pixels.sort(Comparable::compareTo);
@@ -163,19 +184,36 @@ public class Filters {
         return pixels;
     }
 
-    public static <T extends RealType<T>> List<T> findPercentiles(List<T> pixels, List<Double> percentiles) {
+    public static <T extends RealType<T>> List<T> getSortedPixelsWhere(Img<T> src, Img<UnsignedByteType> mask) {
+        List<T> pixels = new ArrayList<>((int)src.size());
+
+        Cursor<T> cursor = src.cursor();
+        RandomAccess<UnsignedByteType> maskAccess = mask.randomAccess();
+        while(cursor.hasNext()) {
+            cursor.fwd();
+            maskAccess.setPosition(cursor);
+            if(maskAccess.get().getInteger() > 0)
+                pixels.add(cursor.get().copy());
+        }
+
+        pixels.sort(Comparable::compareTo);
+
+        return pixels;
+    }
+
+    public static <T extends RealType<T>> List<T> getPercentiles(List<T> sortedPixels, List<Double> percentiles) {
         List<T> result = new ArrayList<>();
 
         for(double percentile : percentiles) {
-            double rank = percentile / 100.0 * (pixels.size() - 1);
+            double rank = percentile / 100.0 * (sortedPixels.size() - 1);
             int lower_rank = (int)Math.floor(rank);
             int higher_rank = (int)Math.ceil(rank);
             double frac = rank - lower_rank; // fractional section
 
             // p = lower_rank + (higher_rank - lower_rank) * frac
-            T p = pixels.get(lower_rank).copy();
-            T p0 = pixels.get(higher_rank).copy();
-            p0.sub(pixels.get(lower_rank));
+            T p = sortedPixels.get(lower_rank).copy();
+            T p0 = sortedPixels.get(higher_rank).copy();
+            p0.sub(sortedPixels.get(lower_rank));
             p0.mul(frac);
             p.add(p0);
             result.add(p);
@@ -205,6 +243,55 @@ public class Filters {
         }
 
         return result;
+    }
+
+    public static UnsignedByteType Otsu(IterableInterval<UnsignedByteType> pixels) {
+        Map<Integer, Long> histogram = new HashMap<>();
+        Cursor<UnsignedByteType> cursor = pixels.cursor();
+
+        long histogramSum = 0;
+        while(cursor.hasNext()) {
+            cursor.fwd();
+            ++histogramSum;
+            histogram.put(cursor.get().getInteger(), histogram.getOrDefault(cursor.get().getInteger(), 0L) + 1);
+        }
+
+        // i cumulative p-histogram for the means
+        double cumulativeipSum = 0;
+        for(int t = 0; t <= 255; ++t) {
+            cumulativeipSum += t * 1.0 * histogram.getOrDefault(t, 0L);
+        }
+
+        cumulativeipSum *= 1.0 / histogramSum;
+
+        // Initial values for t < 0
+        int t_best = 0;
+        double var_best = 0;
+        double w0 = 0;
+        double mu0 = 0;
+
+        for (int t = 0; t <= 255; ++t) {
+
+            // This cannot change the threshold
+            if (histogram.getOrDefault(t, 0L) == 0)
+                continue;
+
+            double p_i = 1.0 * histogram.get(t) / histogramSum;
+            mu0 *= w0;
+            w0 += p_i;
+            double w1 = 1.0 - w0;
+
+            mu0 = (mu0 + t * p_i) / w0;
+            double mu1 = (cumulativeipSum - w0 * mu0) / w1;
+            double var = w0 * w1 * Math.pow(mu0 - mu1, 2.0);
+
+            if (var > var_best) {
+                var_best = var;
+                t_best = t;
+            }
+        }
+
+        return new UnsignedByteType(t_best);
     }
 
     public static void closeHoles(Img<UnsignedByteType> mask) {
@@ -292,5 +379,32 @@ public class Filters {
                 }
             }
         }
+    }
+
+    public static <T extends RealType<T>> long countNonZero(IterableInterval<T> img) {
+        long count = 0;
+        Cursor<T> cursor = img.cursor();
+        while(cursor.hasNext()) {
+            cursor.fwd();
+            if(cursor.get().getRealDouble() > 0) {
+                ++count;
+            }
+        }
+
+        return count;
+    }
+
+    public static Img<UnsignedByteType> convertFloatToUByte(Img<FloatType> src) {
+        Img<UnsignedByteType> target = (new ArrayImgFactory<>(new UnsignedByteType())).create(getDimensions(src));
+        RandomAccess<UnsignedByteType> targetAccess = target.randomAccess();
+        Cursor<FloatType> cursor = src.cursor();
+
+        while(cursor.hasNext()) {
+            cursor.fwd();
+            targetAccess.setPosition(cursor);
+            targetAccess.get().set((int)(cursor.get().get() * 255));
+        }
+
+        return target;
     }
 }
