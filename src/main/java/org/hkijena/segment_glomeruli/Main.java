@@ -9,6 +9,7 @@ import com.google.gson.JsonObject;
 import org.apache.commons.cli.*;
 import org.hkijena.segment_glomeruli.tasks.*;
 
+import java.io.FileWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -70,6 +71,8 @@ public class Main {
                 voxel_z.put(key, obj.getAsJsonObject(key).getAsJsonPrimitive("z").getAsDouble());
             }
         }
+
+        long startTime = System.currentTimeMillis();
 
         // Load data interfaces
         List<DataInterface> dataInterfaces = new ArrayList<>();
@@ -155,6 +158,13 @@ public class Main {
         }
 
         System.out.println("Task finished.");
+
+        long endTime = System.currentTimeMillis();
+        long runtime = endTime - startTime;
+        try(FileWriter writer = new FileWriter(outputFilePath.resolve("runtime.log").toFile())) {
+            writer.write("" + runtime);
+        }
+
         System.exit(0);
     }
 
