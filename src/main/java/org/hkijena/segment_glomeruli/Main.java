@@ -85,8 +85,22 @@ public class Main {
             dataInterfaces.add(dataInterface);
         }
 
-        // Generate DAG
+        // Parallelize data loading
         Map<Integer, DAGTask> dagTasks = new HashMap<>();
+        ExecutorService dataExecutorService = Executors.newFixedThreadPool(numThreads);
+        DexecutorConfig<Integer, Integer> dataDexecutorConfig = new DexecutorConfig<>(dataExecutorService, integer -> dagTasks.get(integer));
+
+        DefaultDexecutor<Integer, Integer> dataDexecutor = new DefaultDexecutor<>(dataDexecutorConfig);
+        for(DataInterface dataInterface : dataInterfaces) {
+            int tid = dagTasks.size();
+            DAGTask task = new InitializeDataInterface(tid, dataInterface);
+            dagTasks.put(tid, task);
+            dataDexecutor.addIndependent(tid);
+        }
+
+        dataDexecutor.execute(ExecutionConfig.TERMINATING);
+
+        // Generate main DAG
         ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
         DexecutorConfig<Integer, Integer> dexecutorConfig = new DexecutorConfig<>(executorService, integer -> dagTasks.get(integer));
         DefaultDexecutor<Integer, Integer> dexecutor = new DefaultDexecutor<>(dexecutorConfig);

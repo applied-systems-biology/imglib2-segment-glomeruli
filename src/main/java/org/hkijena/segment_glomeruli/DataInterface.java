@@ -15,6 +15,7 @@ import java.nio.file.Path;
 
 public class DataInterface {
 
+    private Path inputImageFile;
     private Path outputDirectory;
 
     private double voxelSizeXY;
@@ -31,6 +32,7 @@ public class DataInterface {
     private volatile long tissuePixelCount = 0;
 
     public DataInterface(Path inputImageFile, Path outputDirectory, double voxelSizeXY, double voxelSizeZ) {
+        this.inputImageFile = inputImageFile;
         this.outputDirectory = outputDirectory;
         this.voxelSizeXY = voxelSizeXY;
         this.voxelSizeZ = voxelSizeZ;
@@ -39,7 +41,9 @@ public class DataInterface {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
 
+    public void initialize() {
         this.inputData = new OMETIFFImageCache<>(inputImageFile, new UnsignedByteType());
         this.tissueOutputData = new TIFFPlanesImageCache<>(outputDirectory.resolve("tissue"), new UnsignedByteType(), this.inputData.getXSize(), this.inputData.getYSize());
         this.glomeruli2DOutputData = new TIFFPlanesImageCache<>(outputDirectory.resolve("glomeruli2d"), new UnsignedByteType(), this.inputData.getXSize(), this.inputData.getYSize());
