@@ -9,6 +9,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
 import org.hkijena.segment_glomeruli.Filters;
+import org.hkijena.segment_glomeruli.Main;
 
 import java.nio.file.Path;
 
@@ -22,7 +23,7 @@ public class OMETIFFImageCache<T extends RealType<T> & NativeType<T>> {
     public OMETIFFImageCache(Path fileName, T imageDataType) {
         this.fileName = fileName;
         this.factory = new ArrayImgFactory<>(imageDataType);
-        img = (new ImgOpener()).openImgs(fileName.toString(),imageDataType).get(0);
+        img = Main.IMGOPENER.openImgs(fileName.toString(),imageDataType).get(0);
         this.imageDataType = imageDataType;
     }
 

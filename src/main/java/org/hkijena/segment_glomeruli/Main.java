@@ -6,6 +6,8 @@ import com.github.dexecutor.core.ExecutionConfig;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import io.scif.img.ImgOpener;
+import io.scif.img.ImgSaver;
 import org.apache.commons.cli.*;
 import org.hkijena.segment_glomeruli.tasks.*;
 
@@ -23,6 +25,10 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class Main {
+
+    public static ImgOpener IMGOPENER = new ImgOpener();
+    public static ImgSaver IMGSAVER = new ImgSaver();
+
     public static void main(String[] args) throws Exception {
         Options options = new Options();
 
@@ -37,6 +43,10 @@ public class Main {
         Option threads = new Option("t", "threads", true, "number of threads");
         threads.setRequired(false);
         options.addOption(threads);
+
+        Option dataThreads = new Option("d", "data-threads", true, "number of threads for data initialization");
+        dataThreads.setRequired(false);
+        options.addOption(dataThreads);
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -58,7 +68,13 @@ public class Main {
         if(cmd.hasOption("threads")) {
             numThreads = Integer.parseInt(cmd.getOptionValue("threads"));
         }
-        System.out.println("Running with " + numThreads + " threads");
+
+        int numDataThreads = 1;
+        if(cmd.hasOption("data-threads")) {
+            numDataThreads = Integer.parseInt(cmd.getOptionValue("data-threads"));
+        }
+
+        System.out.println("Running with " + numThreads + " threads and " + numDataThreads + " data initialization threads");
 
         // Load voxel sizes
         Map<String, Double> voxel_xy = new HashMap<>();
@@ -87,7 +103,7 @@ public class Main {
 
         // Parallelize data loading
         Map<Integer, DAGTask> dagTasks = new HashMap<>();
-        ExecutorService dataExecutorService = Executors.newFixedThreadPool(numThreads);
+        ExecutorService dataExecutorService = Executors.newFixedThreadPool(numDataThreads);
         DexecutorConfig<Integer, Integer> dataDexecutorConfig = new DexecutorConfig<>(dataExecutorService, integer -> dagTasks.get(integer));
 
         DefaultDexecutor<Integer, Integer> dataDexecutor = new DefaultDexecutor<>(dataDexecutorConfig);

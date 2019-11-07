@@ -7,6 +7,7 @@ import net.imglib2.img.ImgFactory;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
+import org.hkijena.segment_glomeruli.Main;
 import org.hkijena.segment_glomeruli.Utils;
 
 import java.io.IOException;
@@ -16,8 +17,6 @@ import java.nio.file.Path;
 public class TIFFPlanesImageCache<T extends RealType<T> & NativeType<T>> {
 
     private Path directory;
-    private ImgSaver saver = new ImgSaver();
-    private ImgOpener opener = new ImgOpener();
     private T imgDataType;
     private ImgFactory<T> factory;
     private long width;
@@ -43,7 +42,7 @@ public class TIFFPlanesImageCache<T extends RealType<T> & NativeType<T>> {
 
     public Img<T> getOrCreatePlane(long z) {
         if(Files.exists(getPathForPlane(z))) {
-            return opener.openImgs(getPathForPlane(z).toString(), imgDataType).get(0);
+            return Main.IMGOPENER.openImgs(getPathForPlane(z).toString(), imgDataType).get(0);
         }
         else {
             return factory.create(getWidth(), getHeight());
@@ -51,7 +50,7 @@ public class TIFFPlanesImageCache<T extends RealType<T> & NativeType<T>> {
     }
 
     public void setPlane(long z, Img<T> img) {
-        saver.saveImg(getPathForPlane(z).toString(), img);
+        Main.IMGSAVER.saveImg(getPathForPlane(z).toString(), img);
     }
 
     public long getWidth() {
