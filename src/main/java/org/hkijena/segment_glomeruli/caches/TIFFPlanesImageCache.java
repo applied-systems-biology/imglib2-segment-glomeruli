@@ -1,7 +1,5 @@
 package org.hkijena.segment_glomeruli.caches;
 
-import io.scif.img.ImgOpener;
-import io.scif.img.ImgSaver;
 import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
 import net.imglib2.img.array.ArrayImgFactory;
@@ -13,6 +11,9 @@ import org.hkijena.segment_glomeruli.Utils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class TIFFPlanesImageCache<T extends RealType<T> & NativeType<T>> {
 
@@ -21,13 +22,36 @@ public class TIFFPlanesImageCache<T extends RealType<T> & NativeType<T>> {
     private ImgFactory<T> factory;
     private long width;
     private long height;
+    private List<String> filenames;
 
-    public TIFFPlanesImageCache(Path directory, T imgDataType, long width, long height) {
+    public TIFFPlanesImageCache(Path directory, T imgDataType) {
         this.directory = directory;
         this.imgDataType = imgDataType;
         this.factory = new ArrayImgFactory<>(imgDataType);
-        this.width = width;
-        this.height = height;
+        this.filenames = new ArrayList<>();
+
+        try {
+            for(Path file : Files.walk(directory).filter(path -> path.toString().endsWith(".tif")).collect(Collectors.toList())) {
+                this.filenames.add(file.getFileName().toString());
+            }
+            this.filenames.sort(String::compareTo);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // Load width and height
+        Img<T> referenceImage = Main.IMGOPENER.openImgs(directory.resolve(filenames.get(0)).toString(), imgDataType).get(0);
+        this.width = referenceImage.dimension(0);
+        this.height = referenceImage.dimension(1);
+    }
+
+    public TIFFPlanesImageCache(Path directory, T imgDataType, TIFFPlanesImageCache<?> reference) {
+        this.directory = directory;
+        this.imgDataType = imgDataType;
+        this.factory = new ArrayImgFactory<>(imgDataType);
+        this.width = reference.width;
+        this.height = reference.height;
+        this.filenames = reference.filenames;
 
         try {
             Utils.ensureDirectory(directory);
@@ -36,28 +60,32 @@ public class TIFFPlanesImageCache<T extends RealType<T> & NativeType<T>> {
         }
     }
 
-    public Path getPathForPlane(long z) {
-        return directory.resolve("z" + String.format("%04d", z) + ".tif");
+    public Path getPathForPlane(int z) {
+        return directory.resolve(filenames.get(z));
     }
 
-    public Img<T> getOrCreatePlane(long z) {
+    public Img<T> getOrCreatePlane(int z) {
         if(Files.exists(getPathForPlane(z))) {
             return Main.IMGOPENER.openImgs(getPathForPlane(z).toString(), imgDataType).get(0);
         }
         else {
-            return factory.create(getWidth(), getHeight());
+            return factory.create(getXSize(), getYSize());
         }
     }
 
-    public void setPlane(long z, Img<T> img) {
+    public void setPlane(int z, Img<T> img) {
         Main.IMGSAVER.saveImg(getPathForPlane(z).toString(), img);
     }
 
-    public long getWidth() {
+    public long getXSize() {
         return width;
     }
 
-    public long getHeight() {
+    public long getYSize() {
         return height;
+    }
+
+    public int getZSize() {
+        return filenames.size();
     }
 }

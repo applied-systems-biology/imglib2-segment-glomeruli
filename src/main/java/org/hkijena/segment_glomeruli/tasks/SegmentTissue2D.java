@@ -23,7 +23,7 @@ import java.util.*;
 
 public class SegmentTissue2D extends DAGTask {
 
-    private long planeZIndex;
+    private int planeZIndex;
 
     private int medianFilterSize = 3;
     private double downscaleFactor = 10;
@@ -32,7 +32,7 @@ public class SegmentTissue2D extends DAGTask {
     private int morphDiskRadius = 5;
     private double labelMinPercentile = 2;
 
-    public SegmentTissue2D(Integer tid, DataInterface dataInterface, long planeZIndex) {
+    public SegmentTissue2D(Integer tid, DataInterface dataInterface, int planeZIndex) {
         super(tid, dataInterface);
         this.planeZIndex = planeZIndex;
     }
@@ -40,7 +40,7 @@ public class SegmentTissue2D extends DAGTask {
     @Override
     public void work() {
         System.out.println("Running SegmentTissue2D on " + getDataInterface().getInputData().toString() + " z=" + planeZIndex);
-        final Img<UnsignedByteType> importedImage = getDataInterface().getInputData().getPlane(planeZIndex);
+        final Img<UnsignedByteType> importedImage = getDataInterface().getInputData().getOrCreatePlane(planeZIndex);
 
         Img<FloatType> img = ImageJFunctions.convertFloat(ImageJFunctions.wrap(importedImage, "img"));
         Filters.median(img.copy(), img, medianFilterSize);

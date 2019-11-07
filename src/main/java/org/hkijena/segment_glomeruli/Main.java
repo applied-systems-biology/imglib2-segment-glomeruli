@@ -69,12 +69,7 @@ public class Main {
             numThreads = Integer.parseInt(cmd.getOptionValue("threads"));
         }
 
-        int numDataThreads = 1;
-        if(cmd.hasOption("data-threads")) {
-            numDataThreads = Integer.parseInt(cmd.getOptionValue("data-threads"));
-        }
-
-        System.out.println("Running with " + numThreads + " threads and " + numDataThreads + " data initialization threads");
+        System.out.println("Running with " + numThreads + " threads");
 
         // Load voxel sizes
         Map<String, Double> voxel_xy = new HashMap<>();
@@ -93,30 +88,17 @@ public class Main {
         // Load data interfaces
         List<DataInterface> dataInterfaces = new ArrayList<>();
 
-        for(Path inputImagePath : Files.walk(inputFilePath).filter(path -> path.toString().endsWith(".tif")).collect(Collectors.toList())) {
-            System.out.println("Generating data interface for " + inputImagePath.toString());
-            double voxelSizeXY = voxel_xy.get(inputImagePath.getFileName().toString());
-            double voxelSizeZ = voxel_z.get(inputImagePath.getFileName().toString());
-            DataInterface dataInterface = new DataInterface(inputImagePath, outputFilePath.resolve(inputImagePath.getFileName()), voxelSizeXY, voxelSizeZ);
+        for(Path samplePath : Files.list(inputFilePath).filter(path -> Files.isDirectory(path)).collect(Collectors.toList())) {
+            System.out.println("Generating data interface for " + samplePath.toString());
+            double voxelSizeXY = voxel_xy.get(samplePath.getFileName().toString());
+            double voxelSizeZ = voxel_z.get(samplePath.getFileName().toString());
+            DataInterface dataInterface = new DataInterface(samplePath, outputFilePath.resolve(samplePath.getFileName()), voxelSizeXY, voxelSizeZ);
             dataInterfaces.add(dataInterface);
         }
 
-        // Parallelize data loading
-        Map<Integer, DAGTask> dagTasks = new HashMap<>();
-        ExecutorService dataExecutorService = Executors.newFixedThreadPool(numDataThreads);
-        DexecutorConfig<Integer, Integer> dataDexecutorConfig = new DexecutorConfig<>(dataExecutorService, integer -> dagTasks.get(integer));
-
-        DefaultDexecutor<Integer, Integer> dataDexecutor = new DefaultDexecutor<>(dataDexecutorConfig);
-        for(DataInterface dataInterface : dataInterfaces) {
-            int tid = dagTasks.size();
-            DAGTask task = new InitializeDataInterface(tid, dataInterface);
-            dagTasks.put(tid, task);
-            dataDexecutor.addIndependent(tid);
-        }
-
-        dataDexecutor.execute(ExecutionConfig.TERMINATING);
-
         // Generate main DAG
+        Map<Integer, DAGTask> dagTasks = new HashMap<>();
+
         ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
         DexecutorConfig<Integer, Integer> dexecutorConfig = new DexecutorConfig<>(executorService, integer -> dagTasks.get(integer));
         DefaultDexecutor<Integer, Integer> dexecutor = new DefaultDexecutor<>(dexecutorConfig);
@@ -126,7 +108,7 @@ public class Main {
             List<Integer> thisLayer = new ArrayList<>();
 
             // Create Tissue2D segmentations
-            for(long z = 0; z < dataInterface.getInputData().getZSize(); ++z) {
+            for(int z = 0; z < dataInterface.getInputData().getZSize(); ++z) {
                 int tid = dagTasks.size();
                 DAGTask task = new SegmentTissue2D(tid, dataInterface, z);
                 dagTasks.put(tid, task);
@@ -144,7 +126,7 @@ public class Main {
             flushDependencies(dexecutor, lastLayer, thisLayer);
 
             // Create Glomeruli 2D segmentations
-            for(long z = 0; z < dataInterface.getInputData().getZSize(); ++z) {
+            for(int z = 0; z < dataInterface.getInputData().getZSize(); ++z) {
                 int tid = dagTasks.size();
                 DAGTask task = new SegmentGlomeruli2D(tid, dataInterface, z);
                 dagTasks.put(tid, task);

@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class SegmentGlomeruli2D extends DAGTask {
-    private long planeZIndex;
+    private int planeZIndex;
 
     private int medianFilterSize = 3;
     private double glomeruliMinRad = 15;
@@ -24,13 +24,13 @@ public class SegmentGlomeruli2D extends DAGTask {
     private double thresholdPercentile = 75;
     private double thresholdFactor = 1.5;
 
-    public SegmentGlomeruli2D(Integer tid, DataInterface dataInterface, long planeZIndex) {
+    public SegmentGlomeruli2D(Integer tid, DataInterface dataInterface, int planeZIndex) {
         super(tid, dataInterface);
         this.planeZIndex = planeZIndex;
     }
 
     private Img<UnsignedByteType> getPreprocessedImage() {
-        Img<UnsignedByteType> importedImage = getDataInterface().getInputData().getPlane(planeZIndex);
+        Img<UnsignedByteType> importedImage = getDataInterface().getInputData().getOrCreatePlane(planeZIndex);
         Img<FloatType> img = ImageJFunctions.convertFloat(ImageJFunctions.wrap(importedImage, "img"));
         Filters.median(img.copy(), img, medianFilterSize);
         Filters.normalizeByMax(img);

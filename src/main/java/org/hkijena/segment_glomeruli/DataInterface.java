@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedIntType;
-import org.hkijena.segment_glomeruli.caches.OMETIFFImageCache;
 import org.hkijena.segment_glomeruli.caches.TIFFPlanesImageCache;
 import org.hkijena.segment_glomeruli.data.GlomeruliQuantificationResult;
 import org.hkijena.segment_glomeruli.data.TissueQuantificationResult;
@@ -15,13 +14,12 @@ import java.nio.file.Path;
 
 public class DataInterface {
 
-    private Path inputImageFile;
     private Path outputDirectory;
 
     private double voxelSizeXY;
     private double voxelSizeZ;
 
-    private OMETIFFImageCache<UnsignedByteType> inputData;
+    private TIFFPlanesImageCache<UnsignedByteType> inputData;
     private TIFFPlanesImageCache<UnsignedByteType> tissueOutputData;
     private TIFFPlanesImageCache<UnsignedByteType> glomeruli2DOutputData;
     private TIFFPlanesImageCache<UnsignedIntType> glomeruli3DOutputData;
@@ -31,8 +29,7 @@ public class DataInterface {
 
     private volatile long tissuePixelCount = 0;
 
-    public DataInterface(Path inputImageFile, Path outputDirectory, double voxelSizeXY, double voxelSizeZ) {
-        this.inputImageFile = inputImageFile;
+    public DataInterface(Path inputImagePath, Path outputDirectory, double voxelSizeXY, double voxelSizeZ) {
         this.outputDirectory = outputDirectory;
         this.voxelSizeXY = voxelSizeXY;
         this.voxelSizeZ = voxelSizeZ;
@@ -41,18 +38,14 @@ public class DataInterface {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+        this.inputData = new TIFFPlanesImageCache<>(inputImagePath, new UnsignedByteType());
+        this.tissueOutputData = new TIFFPlanesImageCache<>(outputDirectory.resolve("tissue"), new UnsignedByteType(), inputData);
+        this.glomeruli2DOutputData = new TIFFPlanesImageCache<>(outputDirectory.resolve("glomeruli2d"), new UnsignedByteType(), inputData);
+        this.glomeruli3DOutputData = new TIFFPlanesImageCache<>(outputDirectory.resolve("glomeruli3d"), new UnsignedIntType(), inputData);
     }
 
-    public void initialize() {
-        this.inputData = new OMETIFFImageCache<>(inputImageFile, new UnsignedByteType());
-        this.tissueOutputData = new TIFFPlanesImageCache<>(outputDirectory.resolve("tissue"), new UnsignedByteType(), this.inputData.getXSize(), this.inputData.getYSize());
-        this.glomeruli2DOutputData = new TIFFPlanesImageCache<>(outputDirectory.resolve("glomeruli2d"), new UnsignedByteType(), this.inputData.getXSize(), this.inputData.getYSize());
-        this.glomeruli3DOutputData = new TIFFPlanesImageCache<>(outputDirectory.resolve("glomeruli3d"), new UnsignedIntType(), this.inputData.getXSize(), this.inputData.getYSize());
-    }
-
-    public OMETIFFImageCache<UnsignedByteType> getInputData() {
-        return inputData;
-    }
+    public TIFFPlanesImageCache<UnsignedByteType> getInputData() { return inputData; }
 
     public TIFFPlanesImageCache<UnsignedByteType> getTissueOutputData() {
         return tissueOutputData;
