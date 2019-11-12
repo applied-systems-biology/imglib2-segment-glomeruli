@@ -74,7 +74,7 @@ public class TIFFPlanesImageCache<T extends RealType<T> & NativeType<T>> {
     }
 
     public void setPlane(int z, Img<T> img) {
-        Main.IMGSAVER.saveImg(getPathForPlane(z).toString(), img);
+        Utils.writeAsCompressedTIFF(img, getPathForPlane(z));
     }
 
     public long getXSize() {
