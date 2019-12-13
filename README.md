@@ -17,6 +17,8 @@ It implements the algorithm published by Klingberg *et. al.*:
 
 > Klingberg, Anika, et al. "Fully automated evaluation of total glomerular number and capillary tuft size in nephritic kidneys using lightsheet microscopy." Journal of the American Society of Nephrology 28.2 (2017): 452-459.
 
+Example data: https://github.com/applied-systems-biology/misa-framework/releases/download/1.0.0/misaxx_kidney_glomeruli_example_data.zip
+
 # Copyright
 
 Copyright by Ruman Gerst
